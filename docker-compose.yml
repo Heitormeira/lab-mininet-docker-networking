@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # Servidor Web (Nginx + Python)
+  web:
+    container_name: web-server
+    build:
+      context: ./dockerfiles
+      dockerfile: Dockerfile.web
+    image: web-server:latest
+    ports:
+      - "8000:8000"
+    networks:
+      - corp_network
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Servidor de Banco de Dados (Fake — Redis)
+  database:
+    container_name: db-server
+    build:
+      context: ./dockerfiles
+      dockerfile: Dockerfile.db
+    image: db-server:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - corp_network
+    volumes:
+      - db_data:/data
+    environment:
+      - REDIS_PASSWORD=lab2025secure
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Monitor de Rede (tcpdump + análise)
+  monitor:
+    container_name: network-monitor
+    image: ubuntu:22.04
+    networks:
+      - corp_network
+    entrypoint: /bin/bash -c "apt-get update && apt-get install -y tcpdump iputils-ping net-tools && sleep infinity"
+    cap_add:
+      - NET_ADMIN
+    cap_drop:
+      - ALL
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  # Rede corporativa simulada
+  corp_network:
+    driver: bridge
+    driver_opts:
+      # com.docker.network.driver.mtu: 1500
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
+          gateway: 172.18.0.1
+
+volumes:
+  db_data:
+    driver: local
+
+# Comentários sobre a configuração:
+# 
+# 1. Services:
+#    - web: servidor web exposto na porta 8000
+#    - database: servidor Redis exposto na porta 6379
+#    - monitor: container para captura de tráfego
+#
+# 2. Networks:
+#    - corp_network: rede bridge isolada para containers
+#    - Subnet 172.18.0.0/16 (172.18.0.0 até 172.18.255.255)
+#    - Gateway 172.18.0.1
+#
+# 3. Volumes:
+#    - db_data: volume persistente para dados do Redis
+#
+# 4. Health Checks:
+#    - Monitoram saúde dos containers
+#    - Reiniciam containers se falharem
+#
+# 5. Logging:
+#    - JSON driver com limite de tamanho
+#    - Evita consumo excessivo de disco

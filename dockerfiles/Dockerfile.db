@@ -1,0 +1,14 @@
+FROM redis:7-alpine
+
+# Copiar configuração customizada do Redis
+COPY redis.conf /usr/local/etc/redis/redis.conf
+
+# Expor porta do Redis
+EXPOSE 6379
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+    CMD redis-cli ping || exit 1
+
+# Comando de inicialização com arquivo de configuração
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
