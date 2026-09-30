@@ -1,252 +1,138 @@
-# Lab Topologia Híbrida — Mininet + Docker
+# Lab de Rede Corporativa — Mininet + Docker
 
-> Simulação de rede corporativa híbrida combinando **Mininet** (simulação de rede) com **Docker** (containerização)
+Laboratório de redes que simula uma rede corporativa segmentada com **Mininet** e, em paralelo, um ambiente de serviços em contêineres **Docker**, para praticar endereçamento IP, segmentação, switching e análise de tráfego.
 
-## 📋 Objetivo
-
-Este laboratório demonstra na prática como:
-- **Redes corporativas** são arquitetadas com múltiplos segmentos
-- **Containers Docker** se comunicam através de diferentes tipos de redes
-- **Tráfego de rede** é analisado em um ambiente controlado
-- **Conceitos de IP, roteamento e switching** funcionam na prática
-
-## 🏗️ Topologia
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      MININET NETWORK                         │
-│                                                              │
-│  Host A (10.0.0.1)  ──┐                     ┌── Host B (10.0.0.2)
-│                       │                     │
-│  Host C (10.0.0.3)  ──┤──  Switch S1  ──┬──┤
-│                       │                  │  └── Host D (10.0.0.4)
-│  Host E (10.0.0.5)  ──┘                 │
-│                                    Switch S2  (Conecta ao Docker)
-│                                        │
-└─────────────────────────────────────────┼────────────────────┘
-                                          │
-┌─────────────────────────────────────────┼────────────────────┐
-│                  DOCKER NETWORK                             │
-│                                        │                    │
-│   Container Web (172.18.0.2)  ←─────────                   │
-│                                                              │
-│   Container DB (172.18.0.3)                                │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-## 🛠️ Tecnologias Utilizadas
-
-| Ferramenta | Versão | Propósito |
-|-----------|--------|----------|
-| **Mininet** | 2.3+ | Simulação de rede |
-| **Docker** | 20.10+ | Containerização |
-| **Docker Compose** | 1.29+ | Orquestração de containers |
-| **Python** | 3.8+ | Scripts de automação |
-| **Linux** | Ubuntu 20.04+ | Sistema operacional |
-| **iperf3** | 3.0+ | Teste de throughput/latência |
-
-## 📦 Pré-requisitos
-
-```bash
-# Atualizar pacotes
-sudo apt update && sudo apt upgrade -y
-
-# Instalar Mininet
-sudo apt install mininet -y
-
-# Instalar Docker
-sudo apt install docker.io docker-compose -y
-
-# Adicionar usuário ao grupo docker (evitar sudo)
-sudo usermod -aG docker $USER
-newgrp docker
-
-# Instalar ferramentas de teste
-sudo apt install iperf3 net-tools curl wget -y
-
-# Instalar Python e dependências
-sudo apt install python3 python3-pip -y
-pip install scapy paramiko
-```
-
-## 🚀 Como Executar
-
-### 1. Clonar o Repositório
-
-```bash
-git clone https://github.com/heitormeira/lab-mininet-docker-networking.git
-cd lab-mininet-docker-networking
-```
-
-### 2. Configurar o Ambiente
-
-```bash
-# Dar permissão de execução aos scripts
-chmod +x scripts/*.py
-chmod +x scripts/setup.sh
-
-# Executar setup inicial
-sudo ./scripts/setup.sh
-```
-
-### 3. Iniciar o Mininet
-
-```bash
-# Executar o topologia Mininet com Python
-sudo python3 topologia_mininet.py
-```
-
-**Isso abrirá o CLI do Mininet.** Você verá:
-```
-mininet> 
-```
-
-### 4. Em outro terminal, Iniciar Docker
-
-```bash
-# Subir os containers
-docker-compose up -d
-
-# Verificar containers rodando
-docker ps
-docker network ls
-```
-
-### 5. Testar Conectividade
-
-No CLI do Mininet, teste:
-
-```bash
-# Pingar entre hosts simulados
-mininet> h1 ping h2
-mininet> h1 ping h3
-
-# Checar IP de cada host
-mininet> h1 ifconfig
-mininet> h2 ifconfig
-
-# Acessar container do Docker a partir do Mininet
-mininet> h1 ping <IP_DOCKER_CONTAINER>
-
-# Testar throughput entre hosts
-mininet> h1 iperf -s &
-mininet> h2 iperf -c h1 -t 10
-```
-
-### 6. Analisar Tráfego com tcpdump
-
-Em um terceiro terminal:
-
-```bash
-# Capturar tráfego na interface virtual
-sudo tcpdump -i <interface_name> -w capture.pcap
-
-# Depois, abrir no Wireshark
-wireshark capture.pcap
-```
-
-## 📊 Estrutura do Projeto
-
-```
-lab-mininet-docker-networking/
-├── README.md                  # Este arquivo
-├── topologia_mininet.py       # Script que cria a topologia Mininet
-├── docker-compose.yml         # Orquestração dos containers
-├── scripts/
-│   ├── setup.sh              # Script de setup inicial
-│   ├── test_connectivity.py  # Testes automatizados
-│   └── analyze_traffic.py    # Análise de tráfego
-├── dockerfiles/
-│   ├── Dockerfile.web        # Imagem do servidor web
-│   └── Dockerfile.db         # Imagem do servidor de BD
-├── docs/
-│   ├── CONCEITOS.md          # Conceitos de rede explicados
-│   ├── TOPOLOGIA.md          # Detalhes da topologia
-│   └── TROUBLESHOOTING.md    # Soluções de problemas
-└── logs/
-    └── trafego.pcap          # Captura de tráfego (gerado)
-```
-
-## 🔍 Conceitos Demonstrados
-
-### 1. **Arquitetura de Redes**
-- Topologia em árvore com múltiplos switches
-- Segmentação de rede (subnets)
-- Roteamento entre segmentos
-
-### 2. **Virtualização & Containerização**
-- Criação de hosts virtuais com Mininet
-- Containers Docker em rede isolada
-- Comunicação entre container e rede simulada
-
-### 3. **Networking no Docker**
-- Tipos de rede: bridge, host, overlay
-- Docker Compose para multi-container
-- DNS interno do Docker
-
-### 4. **Linux Networking**
-- Configuração de interfaces (ifconfig, ip)
-- Roteamento (route, ip route)
-- Firewall e iptables
-- Network namespaces
-
-### 5. **Testes de Rede**
-- Ping e ICMP
-- TCP/UDP com iperf
-- Análise de tráfego com tcpdump
-- Rastreamento de rotas (traceroute)
-
-## 📈 Resultados Esperados
-
-Após executar este lab, você conseguirá:
-
-✅ Criar uma topologia de rede customizada  
-✅ Simular múltiplos hosts com endereços IP distintos  
-✅ Executar Docker containers em rede isolada  
-✅ Testar comunicação entre hosts simulados e containers  
-✅ Medir latência, bandwidth e jitter  
-✅ Capturar e analisar pacotes de rede  
-✅ Compreender fluxo de dados em rede  
-
-## 🐛 Troubleshooting
-
-### Erro: "Permission denied" ao executar topologia_mininet.py
-```bash
-# Solução: executar com sudo
-sudo python3 topologia_mininet.py
-```
-
-### Erro: "Docker daemon is not running"
-```bash
-# Solução: iniciar o Docker
-sudo systemctl start docker
-```
-
-### Containers não conseguem pingar hosts do Mininet
-- Verificar se ambas as redes estão configuradas
-- Checar rotas com `docker exec <container> ip route`
-- Verificar firewall/iptables
-
-Veja mais em `docs/TROUBLESHOOTING.md`
-
-## 📚 Referências
-
-- [Mininet Walkthrough](http://mininet.org/walkthrough/)
-- [Docker Networking](https://docs.docker.com/network/)
-- [TCP/IP Protocol Stack](https://en.wikipedia.org/wiki/Internet_protocol_suite)
-- [Linux Network Namespaces](https://man7.org/linux/man-pages/man7/network_namespaces.7.html)
-
-## 👨‍💻 Autor
-
-**Heitor Meira** — Estudante de Ciência da Computação  
-UNICAP — Pernambuco, Brasil
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja `LICENSE` para detalhes.
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Mininet](https://img.shields.io/badge/Mininet-4B5563?style=flat-square)
+![Open vSwitch](https://img.shields.io/badge/Open%20vSwitch-0B5394?style=flat-square)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
 
 ---
 
-**Última atualização:** Agosto 2025  
-**Status:** ✅ Em desenvolvimento & testes
+## Visão geral
+
+O projeto tem duas partes independentes:
+
+| Parte | Arquivo | O que faz |
+|---|---|---|
+| Rede simulada | `topologia_mininet.py` | Cria 3 switches Open vSwitch em hierarquia e 7 hosts distribuídos em 3 segmentos de rede, com banda e latência configuradas por link |
+| Serviços em contêiner | `docker-compose.yml` | Sobe um servidor web, um Redis e um contêiner de monitoramento com tcpdump numa rede bridge dedicada |
+
+## Topologia Mininet
+
+```mermaid
+graph TD
+    S1[s1 - Acesso] --- S2[s2 - Agregação]
+    S2 --- S3[s3 - Borda]
+    H1[h1<br/>10.0.0.1] --- S1
+    H2[h2<br/>10.0.0.2] --- S1
+    H3[h3<br/>10.0.1.1] --- S2
+    H4[h4<br/>10.0.1.2] --- S2
+    H5[h5<br/>10.0.1.3] --- S2
+    H6[h6<br/>10.0.2.1<br/>HTTP :8080] --- S3
+    H7[h7<br/>10.0.2.2<br/>TCP :9999] --- S3
+```
+
+| Segmento | Sub-rede | Hosts | Switch | Link |
+|---|---|---|---|---|
+| Administração | 10.0.0.0/24 | h1, h2 | s1 | 100 Mbps, 1 ms |
+| Usuários | 10.0.1.0/24 | h3, h4, h5 | s2 | 100 Mbps, 2 ms |
+| Servidores | 10.0.2.0/24 | h6, h7 | s3 | 1 Gbps, 0,5 ms |
+
+Ao iniciar, o script também:
+- configura em cada host rotas estáticas para os outros segmentos, via gateway `.254` de cada sub-rede;
+- sobe um servidor HTTP em `h6` (porta 8080) e um listener TCP com netcat em `h7` (porta 9999);
+- mostra conexões, IPs e MACs de todos os hosts e abre o CLI do Mininet.
+
+## Ambiente Docker
+
+Rede bridge `corp_network` na sub-rede `172.18.0.0/16` (gateway `172.18.0.1`):
+
+| Serviço | Imagem | Porta | Função |
+|---|---|---|---|
+| `web` | Ubuntu 22.04 + Python | 8000 | Servidor HTTP com os endpoints `/`, `/info` e `/health` |
+| `database` | Redis 7 (Alpine) | 6379 | Banco em memória com configuração própria (`redis.conf`) |
+| `monitor` | Ubuntu 22.04 | — | Contêiner com `tcpdump`, `ping` e `net-tools` para capturar tráfego da rede |
+
+Todos os serviços têm health check e limite de tamanho de log.
+
+## Estrutura
+
+```
+lab-mininet-docker-networking/
+├── topologia_mininet.py     # Topologia, rotas e serviços do Mininet
+├── docker-compose.yml       # Serviços e rede Docker
+└── dockerfiles/
+    ├── Dockerfile.web       # Servidor web em Python
+    ├── Dockerfile.db        # Redis
+    └── redis.conf           # Configuração do Redis
+```
+
+## Requisitos
+
+- Linux (testado em Ubuntu 20.04 ou superior)
+- Mininet 2.3+ e Open vSwitch
+- Docker e Docker Compose
+- Python 3.8+
+- `iperf`, `tcpdump` e Wireshark (opcionais, para testes e análise)
+
+```bash
+sudo apt install mininet docker.io docker-compose iperf tcpdump -y
+```
+
+## Como executar
+
+**1. Rede Mininet**
+
+```bash
+git clone https://github.com/Heitormeira/lab-mininet-docker-networking.git
+cd lab-mininet-docker-networking
+sudo python3 topologia_mininet.py
+```
+
+Testes no CLI do Mininet:
+
+```bash
+mininet> pingall              # conectividade geral
+mininet> h1 ping -c 3 h2      # dentro do segmento Administração
+mininet> h3 ping -c 3 h5      # dentro do segmento Usuários
+mininet> h7 iperf -s &        # servidor iperf no segmento Servidores
+mininet> h6 iperf -c h7 -t 5  # throughput no link de 1 Gbps
+mininet> h1 ip route          # rotas configuradas
+```
+
+**2. Serviços Docker** (em outro terminal)
+
+```bash
+docker-compose up -d --build
+docker ps
+curl http://localhost:8000/health
+curl http://localhost:8000/info
+```
+
+**3. Captura de tráfego**
+
+```bash
+sudo tcpdump -i s1-eth1 -w captura.pcap   # interface de um switch do Mininet
+wireshark captura.pcap
+```
+
+## Limitações conhecidas e próximos passos
+
+- **Roteamento entre segmentos:** os hosts apontam para gateways `10.0.x.254`, mas a topologia ainda não tem um roteador com esses endereços. Por isso, a comunicação funciona dentro de cada segmento, mas não entre segmentos diferentes. O próximo passo é adicionar um host roteador Linux com `ip_forward` habilitado.
+- **Integração Mininet ↔ Docker:** hoje os dois ambientes rodam lado a lado, sem link direto entre eles. A integração pode ser feita com [Containernet](https://containernet.github.io/) ou ligando a bridge do Docker a um switch OVS.
+- Separar os segmentos em VLANs no Open vSwitch.
+
+## Conceitos praticados
+
+Endereçamento IPv4 e sub-redes · switching com Open vSwitch · topologia hierárquica (acesso, agregação e borda) · rotas estáticas · controle de banda e latência com `TCLink` · redes bridge no Docker · health checks · captura de pacotes com tcpdump e Wireshark
+
+## Autor
+
+**Heitor Meira**, estudante de Ciência da Computação na UNICAP
+[LinkedIn](https://linkedin.com/in/heitormeira) · [GitHub](https://github.com/Heitormeira)
+
+## Licença
+
+Distribuído sob a licença MIT. Veja [LICENSE](LICENSE).
